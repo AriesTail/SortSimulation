@@ -1,21 +1,26 @@
 from copy import deepcopy
 from functools import wraps
+import os
 import time
 
-from memory_profiler import profile
+from joblib.externals.loky.backend.utils import psutil
 
 usedTime = None
+usedMemory = None
 
 
 def timer(function):
 
     def timer_(*args, **kwlist):
-        global usedTime
+        global usedTime, usedMemory
         print(function.__name__ + ":")
         t0 = time.time()
+        m0 = psutil.Process(os.getpid()).memory_info().rss
         result = function(*args, **kwlist)
         t1 = time.time()
+        m1 = psutil.Process(os.getpid()).memory_info().rss
         usedTime = str(t1 - t0)
+        usedMemory = (str((m1 - m0) / 2))
         print("used time:" + usedTime)
         return result
 
@@ -24,15 +29,16 @@ def timer(function):
 
 class SortMethonds:
     
-    dataSize, result = None, None
+    dataSize, result_time, result_memory = None, None, None
     list = []
     origin_list = []
 
-    def __init__(self, data, dataSize, result):
+    def __init__(self, data, dataSize, result_time, result_memory):
         self.list = deepcopy(data)
         self.origin_list = deepcopy(data)
         self.dataSize = dataSize
-        self.result = result
+        self.result_time = result_time
+        self.result_memory = result_memory
         
     def analyse(function):
 
@@ -180,15 +186,24 @@ class SortMethonds:
 #     @profile
     def sortAll(self):
         self.bubbleSort()
-        self.result.loc[0, self.dataSize] = usedTime
+        self.result_time.loc[0, self.dataSize] = usedTime
+        self.result_memory.loc[0, self.dataSize] = usedMemory
+        
         self.insertSort()
-        self.result.loc[1, self.dataSize] = usedTime
+        self.result_time.loc[1, self.dataSize] = usedTime
+        self.result_memory.loc[1, self.dataSize] = usedMemory
+        
         self.selectSort()
-        self.result.loc[2, self.dataSize] = usedTime
+        self.result_time.loc[2, self.dataSize] = usedTime
+        self.result_memory.loc[2, self.dataSize] = usedMemory
+        
         self.mergeSort()
-        self.result.loc[3, self.dataSize] = usedTime
+        self.result_time.loc[3, self.dataSize] = usedTime
+        self.result_memory.loc[3, self.dataSize] = usedMemory
+
 #         self.quickSort()       
         self.__quickSort2()
-        self.result.loc[4, self.dataSize] = usedTime
+        self.result_time.loc[4, self.dataSize] = usedTime
+        self.result_memory.loc[4, self.dataSize] = usedMemory
         print()
         
