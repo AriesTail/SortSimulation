@@ -4,15 +4,19 @@ import time
 
 from memory_profiler import profile
 
+usedTime = None
+
 
 def timer(function):
 
     def timer_(*args, **kwlist):
+        global usedTime
         print(function.__name__ + ":")
         t0 = time.time()
         result = function(*args, **kwlist)
         t1 = time.time()
-        print("used time:" + str(t1 - t0))
+        usedTime = str(t1 - t0)
+        print("used time:" + usedTime)
         return result
 
     return timer_
@@ -20,12 +24,15 @@ def timer(function):
 
 class SortMethonds:
     
+    dataSize, result = None, None
     list = []
     origin_list = []
 
-    def __init__(self, array):
-        self.list = deepcopy(array)
-        self.origin_list = deepcopy(array)
+    def __init__(self, data, dataSize, result):
+        self.list = deepcopy(data)
+        self.origin_list = deepcopy(data)
+        self.dataSize = dataSize
+        self.result = result
         
     def analyse(function):
 
@@ -113,6 +120,7 @@ class SortMethonds:
     def __quickSort(self, l, r):
 #         if r > l and r - l < 16:
 #             return self.__selectSort(l, r)
+        print(l, r)
         if l < r:
             x = self.list[r]
             i = l - 1
@@ -140,6 +148,29 @@ class SortMethonds:
     #         self.__quickSort(list, l, l1 - 1)
     #         self.__quickSort(list, l1 + 1, r)
     #         return list
+    
+    @analyse
+    @timer
+    def __quickSort2(self):
+        startStack = [0, ]
+        endStack = [len(self.list) - 1, ]
+        while startStack and endStack:
+            start = startStack.pop()
+            end = endStack.pop()
+            if start > end:
+                continue
+            i = start 
+            j = end
+            while i < j:
+                if self.list[i] > self.list[j]:
+                    self.list[i], self.list[j - 1], self.list[j] = self.list[j - 1], self.list[j], self.list[i]
+                    j -= 1
+                else:
+                    i += 1
+            startStack.append(start)
+            endStack.append(i - 1)
+            startStack.append(i + 1)
+            endStack.append(end)
 
     @analyse
     @timer
@@ -148,9 +179,16 @@ class SortMethonds:
     
 #     @profile
     def sortAll(self):
-#         self.bubbleSort()
-#         self.insertSort()
+        self.bubbleSort()
+        self.result.loc[0, self.dataSize] = usedTime
+        self.insertSort()
+        self.result.loc[1, self.dataSize] = usedTime
         self.selectSort()
+        self.result.loc[2, self.dataSize] = usedTime
         self.mergeSort()
-        self.quickSort()
+        self.result.loc[3, self.dataSize] = usedTime
+#         self.quickSort()       
+        self.__quickSort2()
+        self.result.loc[4, self.dataSize] = usedTime
+        print()
         
