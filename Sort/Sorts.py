@@ -1,30 +1,29 @@
 from copy import deepcopy
-from functools import wraps
-import os
-import time
-
-from joblib.externals.loky.backend.utils import psutil
+# from functools import wraps
+# import os
+# import time
+# 
+# from joblib.externals.loky.backend.utils import psutil
 
 usedTime = None
 usedMemory = None
 
-
-def timer(function):
-
-    def timer_(*args, **kwlist):
-        global usedTime, usedMemory
-        print(function.__name__ + ":")
-        t0 = time.time()
-        m0 = psutil.Process(os.getpid()).memory_info().rss
-        result = function(*args, **kwlist)
-        t1 = time.time()
-        m1 = psutil.Process(os.getpid()).memory_info().rss
-        usedTime = str(t1 - t0)
-        usedMemory = (str((m1 - m0) / 2))
-        print("used time:" + usedTime)
-        return result
-
-    return timer_
+# def timer(self, function):
+# 
+#     def timer_(self, *args, **kwlist):
+#         global usedTime, usedMemory
+#         print(function.__name__ + ":")
+#         t0 = time.time()
+#         m0 = psutil.Process(os.getpid()).memory_info().rss
+#         result = function(self, *args, **kwlist)
+#         t1 = time.time()
+#         m1 = psutil.Process(os.getpid()).memory_info().rss
+#         usedTime = str(t1 - t0)
+#         usedMemory = (str((m1 - m0) / 2))
+#         print("used time:" + usedTime)
+#         return result
+# 
+#     return timer_
 
 
 class SortMethonds:
@@ -33,26 +32,27 @@ class SortMethonds:
     list = []
     origin_list = []
 
-    def __init__(self, data, dataSize, result_time, result_memory):
+    def __init__(self, data, dataSize=32, result_time=0, result_memory=0):
         self.list = deepcopy(data)
         self.origin_list = deepcopy(data)
         self.dataSize = dataSize
         self.result_time = result_time
         self.result_memory = result_memory
         
-    def analyse(function):
+#     def analyse(function):
+# 
+#         @wraps(function)
+#         def analyse__(self, *args, **kwlist):
+#             result = function(self, *args, **kwlist)
+#             self.list = deepcopy(self.origin_list)
+#             return result
+#     
+#         return analyse__
 
-        @wraps(function)
-        def analyse__(self, *args, **kwlist):
-            result = function(self, *args, **kwlist)
-            self.list = deepcopy(self.origin_list)
-            return result
-    
-        return analyse__
-
-    @analyse
-    @timer
+#     @analyse
+#     @timer
     def insertSort(self):
+        frames = [deepcopy(self.list)]
         for i in range(1, len(self.list)):
             t = self.list[i]
             j = i - 1
@@ -60,13 +60,17 @@ class SortMethonds:
                 self.list[j + 1] = self.list[j]
                 j -= 1
             self.list[j + 1] = t
+            frames.append(deepcopy(self.list))
+        return frames
 
-    @analyse
-    @timer
+#     @analyse
+#     @timer
     def selectSort(self):
-        self.__selectSort(0, len(self.list) - 1)
+        frames = self.__selectSort(0, len(self.list) - 1)
+        return frames
         
     def __selectSort(self, l, r):
+        frames = [deepcopy(self.list)]
         for i in range(l, r + 1):
             minV = i;
             for j in range(i + 1, len(self.list)):
@@ -75,10 +79,13 @@ class SortMethonds:
             t = self.list[i]
             self.list[i] = self.list[minV]
             self.list[minV] = t
+            frames.append(deepcopy(self.list))
+        return frames
     
-    @analyse
-    @timer
+#     @analyse
+#     @timer
     def bubbleSort(self):
+        frames = [deepcopy(self.list)]
         b = True
         while b:
             b = False
@@ -88,40 +95,56 @@ class SortMethonds:
                     self.list[i] = self.list[i - 1]
                     self.list[i - 1] = t
                     b = True
+            frames.append(deepcopy(self.list))
+        return frames
     
-    def __merge(self, a1, a2):
-        i1, i2, list = 0, 0, []
+    def __merge(self, l, mid, r, frames):
+        a1 = self.list[l:mid]
+        a2 = self.list[mid:r + 1]
+        i1, i2 = 0, 0
+        list = []
         while i1 < len(a1)  and i2 < len(a2) :
             if a1[i1] < a2[i2]:
                 list.append(a1[i1])
                 i1 += 1
+                self.list[l:l + i1 + i2] = list
             else:
                 list.append(a2[i2])
                 i2 += 1
-        if i1 < len(a1):
-            list.extend(a1[i1:])
-        if i2 < len(a2) :
-            list.extend(a2[i2:])
+                self.list[l:l + i1 + i2] = list
+            frames.append(deepcopy(self.list))
+        while i1 < len(a1):
+            self.list[l + i1 + i2] = a1[i1]
+            i1 += 1
+            frames.append(deepcopy(self.list))
+        while i2 < len(a2):
+            self.list[l + i1 + i2] = a2[i2]
+            i2 += 1
+            frames.append(deepcopy(self.list))
         return list
     
-    def __mergeSort(self, l, r):
+    def __mergeSort(self, l, r, frames):
         if l >= r:
-            return [self.list[l]]
+                pass
         elif l == r - 1:
             if self.list[r] < self.list[l]:
-                return [self.list[r], self.list[l]]
+                self.list[l] , self.list[r] = self.list[r] , self.list[l]
+                frames.append(deepcopy(self.list))
             else:
-                return [self.list[l], self.list[r]]
+                pass
         else:
             mid = int((r + l) / 2)
-            a1 = self.__mergeSort(l, mid - 1)
-            a2 = self.__mergeSort(mid, r)
-            return self.__merge(a1, a2)
+            self.__mergeSort(l, mid - 1, frames)
+            self.__mergeSort(mid, r, frames)
+            self.__merge(l, mid, r, frames)
+        return frames
         
-    @analyse
-    @timer
+#     @analyse
+#     @timer
     def mergeSort(self):
-        self.list = self.__mergeSort(0, len(self.list) - 1)
+        frames = [deepcopy(self.list)]
+        frames = self.__mergeSort(0, len(self.list) - 1, frames)
+        return frames
     
     def __quickSort(self, l, r):
 #         if r > l and r - l < 16:
@@ -155,9 +178,10 @@ class SortMethonds:
     #         self.__quickSort(list, l1 + 1, r)
     #         return list
     
-    @analyse
-    @timer
-    def __quickSort2(self):
+#     @analyse
+#     @timer
+    def quickSort2(self):
+        frames = [deepcopy(self.list)]
         startStack = [0, ]
         endStack = [len(self.list) - 1, ]
         while startStack and endStack:
@@ -177,9 +201,11 @@ class SortMethonds:
             endStack.append(i - 1)
             startStack.append(i + 1)
             endStack.append(end)
+            frames.append(deepcopy(self.list))
+        return frames
 
-    @analyse
-    @timer
+#     @analyse
+#     @timer
     def quickSort(self):
         return self.__quickSort(0, len(self.list) - 1)
     
@@ -202,7 +228,7 @@ class SortMethonds:
         self.result_memory.loc[3, self.dataSize] = usedMemory
 
 #         self.quickSort()       
-        self.__quickSort2()
+        self.quickSort2()
         self.result_time.loc[4, self.dataSize] = usedTime
         self.result_memory.loc[4, self.dataSize] = usedMemory
         print()
