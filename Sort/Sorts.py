@@ -59,6 +59,7 @@ class SortMethonds:
             while self.list[j] > t and j >= 0:
                 self.list[j + 1] = self.list[j]
                 j -= 1
+                frames.append(deepcopy(self.list))
             self.list[j + 1] = t
             frames.append(deepcopy(self.list))
         return frames
@@ -95,7 +96,7 @@ class SortMethonds:
                     self.list[i] = self.list[i - 1]
                     self.list[i - 1] = t
                     b = True
-            frames.append(deepcopy(self.list))
+                    frames.append(deepcopy(self.list))
         return frames
     
     def __merge(self, l, mid, r, frames):
@@ -194,6 +195,7 @@ class SortMethonds:
             while i < j:
                 if self.list[i] > self.list[j]:
                     self.list[i], self.list[j - 1], self.list[j] = self.list[j - 1], self.list[j], self.list[i]
+                    frames.append(deepcopy(self.list))
                     j -= 1
                 else:
                     i += 1
